@@ -48,8 +48,9 @@ const qtClients = new Map(); // Store QT clients with their IDs
 // Listen for connection events
 wss.on("connection", (ws, req) => {
   console.log("A new client connected.");
-  const ip1 = req.headers['x-forwarded-for'];
-  console.log(ip1.split(",")[0].trim());
+  const ip1 = req.socket.remoteAddress;
+
+  console.log(`New connection from IP: ${ip1}`);
   ws.on("message", (message) => {
     try {
       // Try to convert the buffer to a string
@@ -63,16 +64,16 @@ wss.on("connection", (ws, req) => {
           case QT_CONNECTED:
             // Assume this is a QT client sending its unique ID
             const entry1 = [...qtClients.entries()].find(
-              ([_, id]) => id === ip1.split(",")[0].trim()
+              ([_, id]) => id === ip1
             );
             qtClientWs1 = entry1 ? entry1[0] : undefined;
             if(!!qtClientWs1) {
               qtClients.delete(qtClientWs1);
             } 
             
-            const clientId = ip1.split(",")[0].trim();
+            const clientId = ip1;
             qtClients.set(ws, clientId);
-            console.log(`QT client registered with ID: ${clientId}`);
+            console.log(`QT client registered with ID: ${ip1}`);
             sendClientList(); // Send the updated list of client IDs
             break;
           case BROWSER_CONNECTED:
@@ -92,7 +93,7 @@ wss.on("connection", (ws, req) => {
           case CAP_UID:
             const jsonDataStr = JSON.stringify(jsonData);
             if (!!qtClientWs) qtClientWs.send(jsonDataStr);
-            console.log(`Sent "Cap" message to client with ID: ${ip1.split(",")[0].trim()}`);
+            console.log(`Sent "Cap" message to client with ID: ${ip1}`);
             break;
           case UN_CAP_UID:
             const jsonDataText0 = JSON.stringify(jsonData);
@@ -117,7 +118,7 @@ wss.on("connection", (ws, req) => {
           case REQUEST_DRIVES:
             
             const entry2 = [...qtClients.entries()].find(
-              ([_, id]) => id === ip1.split(",")[0].trim()
+              ([_, id]) => id === ip1
             );
             qtClientWs = entry2 ? entry2[0] : undefined;
             // if (qtClientWs && qtClientWs.readyState === WebSocket.OPEN) {
